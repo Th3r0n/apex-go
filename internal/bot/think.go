@@ -253,12 +253,88 @@ func (b *Bot) think(act *Action) {
 				if prev != nil {
 					c = prev(x, y)
 				}
-				if b.W.Visible(ex, ey, ez, x, y, b.pos[2]+b.height*0.5) {
-					c += dmg * 0.25
+				if b.W.Visible(ex, ey, ez, x, y, b.pos[2]+b.height*0.5) || b.W.Visible(ex, ey, ez, x, y, b.pos[2]+b.height*0.9) {
+					c += dmg
 				}
 				return c
 			}
-			rq.lookTicks = 6
+			rq.lookTicks = 12
+			rq.dodgeBoost = true
+		}
+	}
+	// from ahmad-ovh/Buildathon@56e0f76b (MIT): anti-lightning forcefield
+	if b.P.AntiLightningW > 0 {
+		haveLight := b.has("lightning") >= 0 && b.energy > 18
+		if !haveLight || hpFrac < 0.55 {
+			lightBase := stat(b.C.Weapons["lightning"], "range", 45)
+			pad := b.P.AntiLightningPad
+			if pad <= 0 {
+				pad = 10
+			}
+			for i := range ths {
+				tr := ths[i].tr
+				if !tr.Light || (!tr.Listed && b.t-tr.LastSeen > 2.5) {
+					continue
+				}
+				safeR := lightBase + pad
+				if tr.Cubes >= 6 {
+					safeR += 6
+				}
+				if ths[i].d > safeR+22 {
+					continue
+				}
+				lx, ly := tr.Pos[0], tr.Pos[1]
+				w := b.P.AntiLightningW
+				prev := rq.posCost
+				rq.posCost = func(x, y float64) float64 {
+					c := 0.0
+					if prev != nil {
+						c = prev(x, y)
+					}
+					d := hyp(x-lx, y-ly)
+					if d < safeR {
+						f := (safeR - d) / safeR
+						c += w * f * (1 + (safeR-d)/20)
+					}
+					return c
+				}
+				if ths[i].d < safeR+4 && tr.LOS {
+					rq.dodgeBoost = true
+					if rq.lookTicks < 10 {
+						rq.lookTicks = 10
+					}
+				}
+			}
+		}
+	}
+	// from ahmad-ovh/Buildathon@56e0f76b (MIT): RearAvoidW, keep extra attackers out of our rear arc
+	if b.P.RearAvoidW > 0 && tgt != nil && tgt.tr.LOS && nEngaged >= 2 {
+		halfFront := b.mech("front_arc_deg", 180) * 0.5 * math.Pi / 180
+		tx, ty := tgt.tr.Pos[0], tgt.tr.Pos[1]
+		var extras [][2]float64
+		for i := range ths {
+			th := &ths[i]
+			if th.engaged && th.tr.ID != tgt.tr.ID && th.tr.LOS && th.d < 210 {
+				extras = append(extras, [2]float64{th.tr.Pos[0], th.tr.Pos[1]})
+			}
+		}
+		if len(extras) > 0 {
+			w := b.P.RearAvoidW
+			prev := rq.posCost
+			rq.posCost = func(x, y float64) float64 {
+				c := 0.0
+				if prev != nil {
+					c = prev(x, y)
+				}
+				face := math.Atan2(ty-y, tx-x)
+				for _, e := range extras {
+					bear := math.Atan2(e[1]-y, e[0]-x)
+					if math.Abs(angDiff(bear, face)) > halfFront {
+						c += w
+					}
+				}
+				return c
+			}
 		}
 	}
 	heading, haveHeading := 0.0, false

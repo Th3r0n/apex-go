@@ -111,6 +111,8 @@ type Params struct {
 	RearBonus     float64
 	CookoffBonus  float64
 	KillFocus     float64
+	AntiLightningPad float64
+	RearAvoidW       float64
 }
 
 func DefaultParams() Params {
@@ -131,6 +133,7 @@ func DefaultParams() Params {
 		LaserDodgeV2: false, SmartFireV2: true, BeamFFA: true, UpV2: false, LaserMechOnly: false,
 		LaserCDTrack: true, DropRun: 0,
 		LeadCumMin: 8, LaserEarlyRel: true, RearBonus: 0.25, CookoffBonus: 0.30,
+		AntiLightningPad: 12, RearAvoidW: 35,
 	}
 }
 
