@@ -1,0 +1,7 @@
+.git
+arena
+check
+tools
+*.md
+!README.md
+bin
