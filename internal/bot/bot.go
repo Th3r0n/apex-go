@@ -141,7 +141,7 @@ type Params struct {
 
 func DefaultParams() Params {
 	return Params{
-		Name: "apex-go", EngageRatio: 0.8, DisengageRat: 0.75, RetreatHP: 0.45, ReturnHP: 0.85, LeadDamp: 0.65,
+		Name: "apex-go", EngageRatio: 0.7, DisengageRat: 0.75, RetreatHP: 0.45, ReturnHP: 0.85, LeadDamp: 0.65,
 		GunMaxRange: 224, StrafeMin: 0.35, StrafeMax: 1.1, LootRadius: 220, WantCubes: 15, DropGreed: 0.5,
 		Hunt: true, PracticeAware: true, FFAReturnFire: 230, Salt: 8, DuelDisengage: 0.5, UseRoofs: true,
 		RoofInSquad: false, RoofMaxClimb: 40, RoofMinHeight: 12, RoofMinZone: 60, DropRadius: 300, LeaveTTD: 10,
@@ -160,7 +160,7 @@ func DefaultParams() Params {
 		AntiLightningPad: 12, RearAvoidW: 35,
 		OpenSecs: 24, CreditOpenS: 25, CoverMinRange: 40, NoMortar: true, LaserValue: 6.0, LightningValue: 2.6,
 		CautiousT: 265, RetreatPest: true, FinalHold: true, CoverReload: true, PracticeRim: 0.6,
-		SquadHuntRange: 220, SquadHuntRangeLaser: 250,
+		SquadHuntRange: 260, SquadHuntRangeLaser: 290,
 		HealBelow: 0.8, HealUntil: 0.97,
 		FFAFrom: 1795363200, FFAUntil: 1795363200 + 5*86400, VultureW: 1.6, FFADuelAt: 3,
 	}
