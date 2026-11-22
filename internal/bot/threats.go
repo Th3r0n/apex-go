@@ -109,7 +109,8 @@ func (b *Bot) belief() stance {
 		return b.brawlStance("ffa")
 	case b.openPhase():
 		return b.brawlStance("open")
-	case b.P.CautiousT > 0 && b.P.PracticeAware && (b.t >= b.P.CautiousT || (b.o.Zone.NextRadius > 0 && b.o.Zone.NextRadius <= 72 && b.t >= 180)):
+	case b.P.CautiousT > 0 && b.P.PracticeAware && (b.t >= b.P.CautiousT || (b.o.Zone.NextRadius > 0 && b.o.Zone.NextRadius <= 72 && b.t >= 180) ||
+		(b.P.PracLateR > 0 && b.o.Zone.NextRadius > 0 && b.o.Zone.NextRadius <= b.P.PracLateR)):
 		return b.brawlStance("late") // from ahmad-ovh/Buildathon@56e0f76b (MIT)
 	}
 	return stance{name: "squad", engageRatio: b.P.EngageRatio, disengage: b.P.DisengageRat, hunt: b.P.Hunt, lootRadius: b.P.LootRadius, wantCubes: b.P.WantCubes}

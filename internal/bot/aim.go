@@ -22,6 +22,7 @@ type aimTarget struct {
 	gunLead         float64
 	gunLeadSet      bool
 	rear, hasMortar bool
+	acc             [2]float64 // practice: target acceleration to lead (zero = none)
 }
 
 func (b *Bot) isRear(tr *Track) bool {
@@ -57,6 +58,9 @@ func (b *Bot) targetOf(tr *Track) aimTarget {
 	sc := tr.scale(b.sizePerCube)
 	at := aimTarget{pos: tr.Pos, vel: tr.Vel, radius: b.mech("radius", 2.5) * sc, centerZ: 4.5 * sc, mech: true, rear: b.isRear(tr), hasMortar: tr.Mortar}
 	at.gunLead, at.gunLeadSet = b.gunLead(tr), true
+	if !b.ffa && b.P.PracAccLead {
+		at.acc = tr.Acc
+	}
 	return at
 }
 
@@ -89,6 +93,11 @@ func (b *Bot) solveDirectLat(tg aimTarget, speed, originH, lat float64) shot {
 		damp := b.leadDamp(tf)
 		px = tg.pos[0] + tg.vel[0]*(lat+tf*damp)*k
 		py = tg.pos[1] + tg.vel[1]*(lat+tf*damp)*k
+		if tg.acc != [2]float64{} {
+			tau := math.Min(lat+tf*damp, 1.0)
+			px += 0.5 * tg.acc[0] * tau * tau * k
+			py += 0.5 * tg.acc[1] * tau * tau * k
+		}
 		vz := clamp(tg.vel[2], -15, 12)
 		pz = tg.pos[2] + tg.centerZ + vz*(lat+tf)*0.6
 		if speed <= 0 {

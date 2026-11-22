@@ -175,7 +175,7 @@ func DefaultParams() Params {
 		HealBelow: 0.8, HealUntil: 0.97,
 		FFAFrom: 1795363200, FFAUntil: 1795363200 + 5*86400, VultureW: 1.6, FFADuelAt: 3, SquadSeek: false,
 		PracRearW: 50, PracFinishX: 1.5, PracFinishS: 3, PracSeek: true, PracSeekS: 30,
-		PracDropSafe: true, PracNpcSafe: true,
+		PracDropSafe: true, PracNpcSafe: true, PracLateR: 160, PracAccLead: true,
 	}
 }
 
@@ -204,6 +204,9 @@ type Track struct {
 	EngT                              float64
 	LaserFiredT                       float64
 	DropT                             float64 // last time its HP went down
+	prevVel                           [2]float64
+	prevVelT                          float64
+	Acc                               [2]float64
 	OtherHurtT                        float64 // last time its HP went down without a hit of ours
 
 	hist                      [trkHist]trkSample
@@ -478,6 +481,16 @@ func (b *Bot) observe(o *Obs) {
 		if b.t-tr.LastSeen > 6 {
 			tr.SeenT0 = b.t
 		}
+		if dt := b.t - tr.prevVelT; dt > 0.01 && dt <= 0.5 && tr.LastSeen == tr.prevVelT {
+			ax, ay := (m.Vel[0]-tr.prevVel[0])/dt, (m.Vel[1]-tr.prevVel[1])/dt
+			if l := hyp(ax, ay); l > 12 {
+				ax, ay = ax/l*12, ay/l*12
+			}
+			tr.Acc = [2]float64{ax, ay}
+		} else {
+			tr.Acc = [2]float64{}
+		}
+		tr.prevVel, tr.prevVelT = [2]float64{m.Vel[0], m.Vel[1]}, b.t
 		tr.Pos, tr.Vel, tr.Aim = m.Pos, m.Vel, m.Aim
 		if m.MaxHP > 0 {
 			if tr.MaxHP > 0 && m.HP < tr.HP-1 {
