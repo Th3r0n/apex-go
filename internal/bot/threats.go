@@ -68,7 +68,9 @@ func (b *Bot) brawlStance(name string) stance {
 
 func (b *Bot) realModel() bool { return b.ffa || b.openPhase() }
 
-func (b *Bot) openPhase() bool { return b.t < 6 || b.t-b.creditAbsorbT < 25 }
+func (b *Bot) openPhase() bool {
+	return b.t < b.P.OpenSecs || (b.P.CreditOpenS > 0 && b.t-b.creditAbsorbT < b.P.CreditOpenS) // from ahmad-ovh/Buildathon@56e0f76b (MIT)
+}
 
 func (b *Bot) belief() stance {
 	total := int(stat(b.C.Match, "mechs", 16))
@@ -104,8 +106,10 @@ func (b *Bot) belief() stance {
 		return b.brawlStance("ffa")
 	case b.openPhase():
 		return b.brawlStance("open")
+	case b.P.CautiousT > 0 && b.P.PracticeAware && (b.t >= b.P.CautiousT || (b.o.Zone.NextRadius > 0 && b.o.Zone.NextRadius <= 72 && b.t >= 180)):
+		return b.brawlStance("late") // from ahmad-ovh/Buildathon@56e0f76b (MIT)
 	}
-	return stance{name: "squad", engageRatio: 0.7, disengage: 0.3, hunt: true, lootRadius: 250, wantCubes: 26}
+	return stance{name: "squad", engageRatio: b.P.EngageRatio, disengage: b.P.DisengageRat, hunt: b.P.Hunt, lootRadius: b.P.LootRadius, wantCubes: b.P.WantCubes}
 }
 
 // ---- §9.5 cover, visibility, fight plan
@@ -495,8 +499,10 @@ func (b *Bot) roamGoal() (float64, float64, bool) {
 			}
 			d := hyp(x-b.pos[0], y-b.pos[1])
 			s := d - math.Min(age, 300)*0.15
-			dn := hyp(x-z.NextCenter[0], y-z.NextCenter[1])
-			s += dn * 0.15
+			if !b.ffa && b.P.PracticeRim > 0 && z.NextRadius >= 180 { // from ahmad-ovh/Buildathon@56e0f76b (MIT)
+				dn := hyp(x-z.NextCenter[0], y-z.NextCenter[1])
+				s += math.Abs(dn-z.NextRadius*0.88) * b.P.PracticeRim
+			}
 			if s < bs {
 				best, bs = k, s
 			}

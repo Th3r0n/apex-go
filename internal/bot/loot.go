@@ -15,12 +15,12 @@ type loot struct {
 
 func (b *Bot) weaponValue(kind string) float64 {
 	switch kind {
-	case "laser":
-		return 2.4
+	case "laser": // from ahmad-ovh/Buildathon@56e0f76b (MIT)
+		return b.P.LaserValue
 	case "lightning":
-		return 2.1
+		return b.P.LightningValue
 	case "mortar":
-		return 2.6
+		return 1.2
 	case "gun":
 		return 2.0
 	}
@@ -29,6 +29,9 @@ func (b *Bot) weaponValue(kind string) float64 {
 
 func (b *Bot) wantPickup(kind string) (bool, int) {
 	if b.has(kind) >= 0 {
+		return false, -1
+	}
+	if kind == "mortar" && b.P.NoMortar && b.realModel() { // from ahmad-ovh/Buildathon@56e0f76b (MIT)
 		return false, -1
 	}
 	for i := 0; i < 2; i++ {
@@ -215,12 +218,12 @@ func (b *Bot) manageWeapons(act *Action) {
 }
 
 var upgradeRank = map[string]float64{
-	"sensors": 0.98, "gyros": 0.95, "jets": 0.92, "mortar_splash": 0.90, "mortar_reload": 0.88,
-	"mortar_velocity": 0.85, "capacitor": 0.82, "reactor": 0.80, "laser_pierce": 0.78,
-	"lightning_chain": 0.75, "servos": 0.68, "nanites": 0.62, "gun_mag": 0.55,
-	"gun_velocity": 0.52, "laser_charge": 0.48, "gun_rate": 0.45, "gun_damage": 0.42,
-	"laser_damage": 0.40, "lightning_range": 0.38, "lightning_efficiency": 0.35,
-	"armor": 0.30, "plating": 0.28,
+	// from ahmad-ovh/Buildathon@56e0f76b (MIT)
+	"plating": 1.00, "armor": 0.96, "gun_rate": 0.90, "gun_damage": 0.88, "gun_velocity": 0.80,
+	"laser_damage": 0.91, "laser_charge": 0.86, "lightning_efficiency": 0.92, "lightning_range": 0.87,
+	"nanites": 0.72, "servos": 0.76, "reactor": 0.50, "capacitor": 0.45, "gun_mag": 0.60,
+	"sensors": 0.35, "gyros": 0.30, "jets": 0.30, "mortar_reload": 0.42, "mortar_splash": 0.45,
+	"mortar_velocity": 0.40, "lightning_chain": 0.40, "laser_pierce": 0.20,
 }
 
 func (b *Bot) pickUpgrade(act *Action) {
@@ -282,7 +285,13 @@ func (b *Bot) chooseHide(zi zoneInfo) int {
 				continue
 			}
 			s := float64(e)*100 + d*b.hideDistW()
-			s += dn * 0.12
+			if z.NextRadius > 60 && dn < z.NextRadius*0.35 { // from ahmad-ovh/Buildathon@56e0f76b (MIT)
+				s += 10
+			}
+			if !b.ffa && b.P.PracticeRim > 0 && z.NextRadius >= 180 {
+				wantR := z.NextRadius * 0.88
+				s += math.Abs(dn-wantR) * b.P.PracticeRim
+			}
 			s += float64(b.Nav.Clear[k]) * 0.8
 			if k == b.holdCell {
 				s -= 9
@@ -294,7 +303,39 @@ func (b *Bot) chooseHide(zi zoneInfo) int {
 		return -1
 	}
 	sort.Slice(cands, func(a, c int) bool { return cands[a].score < cands[c].score })
-	return cands[0].cell
+	if len(cands) > 60 { // from ahmad-ovh/Buildathon@56e0f76b (MIT): refine the shortlist with enemies and drops
+		cands = cands[:60]
+	}
+	best, bs := -1, 1e18
+	for _, c := range cands {
+		x, y := b.Nav.Pos(c.cell)
+		gz := float64(b.Nav.Z[c.cell])
+		s := c.score
+		for _, tr := range b.tracks {
+			if tr.NPC || b.t-tr.LastSeen > 25 {
+				continue
+			}
+			d := hyp(tr.Pos[0]-x, tr.Pos[1]-y)
+			if d < 90 {
+				s += (90 - d) * 0.35
+			}
+			if d < 260 && b.t-tr.LastSeen < 8 {
+				sc := tr.scale(b.sizePerCube)
+				if b.W.Visible(tr.Pos[0], tr.Pos[1], tr.Pos[2]+8*sc, x, y, gz+b.height*0.6) {
+					s += 30
+				}
+			}
+		}
+		for i := range b.o.Drops {
+			if hyp(b.o.Drops[i].Pos[0]-x, b.o.Drops[i].Pos[1]-y) < 70 {
+				s += 15
+			}
+		}
+		if s < bs {
+			best, bs = c.cell, s
+		}
+	}
+	return best
 }
 
 func (b *Bot) hideDistW() float64 {

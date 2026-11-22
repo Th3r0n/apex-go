@@ -289,7 +289,7 @@ func (b *Bot) engage(act *Action, tg aimTarget, hasLOS, losRecent bool, hpLeft f
 		}
 	}
 	if morI >= 0 && morS.ok && morS.clear && b.slots[morI].cooldown <= 0.15 && !laserReady {
-		gunIdle := gunI < 0 || b.slots[gunI].reload > 0 || b.slots[gunI].ammo == 0 || !gunS.clear || d > 230
+		gunIdle := gunI < 0 || b.slots[gunI].reload > 0 || b.slots[gunI].ammo == 0 || !gunS.clear || d > b.P.GunMaxRange
 		if allowFire && (b.mortarWorth(tg, morS, d) || (gunIdle && morS.dist > 25)) {
 			primary = morS
 			usingMortarAim = true
@@ -311,7 +311,7 @@ func (b *Bot) engage(act *Action, tg aimTarget, hasLOS, losRecent bool, hpLeft f
 			act.Reload = true
 		}
 		rng := stat(sl.stats, "range", 230)
-		maxR := math.Min(rng-5, 230)
+		maxR := math.Min(rng-5, b.P.GunMaxRange)
 		if !tg.mech {
 			maxR = math.Min(rng-5, 120)
 		}
@@ -526,7 +526,7 @@ func (b *Bot) dpsOf(gun, laser, light, mortar bool, cubes int, d float64, energy
 }
 
 func (b *Bot) myDPS(d float64) float64 {
-	gun := b.has("gun") >= 0 && d < 230
+	gun := b.has("gun") >= 0 && d < b.P.GunMaxRange
 	return b.dpsOf(gun, b.has("laser") >= 0, b.has("lightning") >= 0, b.has("mortar") >= 0, b.o.Self.Cubes, d, b.energy > 15, b.myGunHit)
 }
 

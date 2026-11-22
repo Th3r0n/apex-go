@@ -68,7 +68,7 @@ func (b *Bot) chooseRoof() (int, world.RoofAccess, bool) {
 		if until, ok := b.roof.ban[i]; ok && b.t < until {
 			continue
 		}
-		if r.Height < 4 || r.InnerD < 2 || !b.roofSpotOK(r) {
+		if r.Height < b.P.RoofMinHeight || r.InnerD < 6+b.radius || !b.roofSpotOK(r) { // from ahmad-ovh/Buildathon@56e0f76b (MIT)
 			continue
 		}
 		if hyp(r.CX-b.pos[0], r.CY-b.pos[1]) > 260+math.Sqrt(r.Area) {
@@ -94,7 +94,16 @@ func (b *Bot) chooseRoof() (int, world.RoofAccess, bool) {
 		if ad > 1e17 {
 			continue
 		}
-		s := ad
+		s := ad*1.2 - math.Min(r.InnerD, 25)*2.5 - math.Min(r.Height, 30)*1.5
+		ix, iy := b.Nav.Pos(r.Inner)
+		for _, tr := range b.tracks {
+			if tr.NPC || b.t-tr.LastSeen > 20 {
+				continue
+			}
+			if d := hyp(tr.Pos[0]-ix, tr.Pos[1]-iy); d < 120 {
+				s += (120 - d) * 0.6
+			}
+		}
 		if i == b.roof.id && b.roof.state != roofNone {
 			s -= 40
 		}

@@ -113,17 +113,28 @@ type Params struct {
 	KillFocus     float64
 	AntiLightningPad float64
 	RearAvoidW       float64
+	OpenSecs         float64
+	CreditOpenS      float64
+	CoverMinRange    float64
+	NoMortar         bool
+	LaserValue       float64
+	LightningValue   float64
+	CautiousT        float64
+	RetreatPest      bool
+	FinalHold        bool
+	CoverReload      bool
+	PracticeRim      float64
 }
 
 func DefaultParams() Params {
 	return Params{
-		Name: "apex-go", EngageRatio: 0.7, DisengageRat: 0.3, RetreatHP: 0.2, ReturnHP: 0.65, LeadDamp: 0.95,
-		GunMaxRange: 230, StrafeMin: 0.12, StrafeMax: 0.28, LootRadius: 250, WantCubes: 26, DropGreed: 0.5,
+		Name: "apex-go", EngageRatio: 1.25, DisengageRat: 0.75, RetreatHP: 0.45, ReturnHP: 0.85, LeadDamp: 0.65,
+		GunMaxRange: 224, StrafeMin: 0.35, StrafeMax: 1.1, LootRadius: 220, WantCubes: 15, DropGreed: 0.5,
 		Hunt: true, PracticeAware: true, FFAReturnFire: 230, Salt: 8, DuelDisengage: 0.5, UseRoofs: true,
 		RoofInSquad: false, RoofMaxClimb: 40, RoofMinHeight: 12, RoofMinZone: 60, DropRadius: 300, LeaveTTD: 10,
 		UseHideMap: false, QuietHoldS: 3, ArmSwapMin: 1, HitModel: 1, PlanV2: true, KiteNeedsLaser: true,
 		ExchangeW: 0, BrawlEngage: 1.3, BrawlDisengage: 0.75, BrawlHunt: true, BrawlLootRadius: 220,
-		BrawlWantCubes: 10, AvoidAdv: 0.65, AvoidRange: 85, AvoidCover: 55, CoverFirst: false, EdgeHold: 2.5,
+		BrawlWantCubes: 10, AvoidAdv: 1.25, AvoidRange: 85, AvoidCover: 55, CoverFirst: true, EdgeHold: 2.5,
 		RunOnRange: 80, RunOnGain: 18, CoverMargin: 8, RetreatRunMax: 0, LootHiddenBias: 0.5, CoverEdgeAdv: 3,
 		HuntLaserEdge: true, Peek: false, OverlandEarly: 0, RoofCoverHold: 6, RoofStandCheck: true, DropStick: true,
 		ClimbClearRange: 150, RoofLeaveQuiet: 25, ZoneSlack: 10, BrawlRoofs: true, BrawlRoofCubes: 6,
@@ -134,6 +145,8 @@ func DefaultParams() Params {
 		LaserCDTrack: true, DropRun: 0,
 		LeadCumMin: 8, LaserEarlyRel: true, RearBonus: 0.25, CookoffBonus: 0.30,
 		AntiLightningPad: 12, RearAvoidW: 35,
+		OpenSecs: 24, CreditOpenS: 25, CoverMinRange: 40, NoMortar: true, LaserValue: 6.0, LightningValue: 2.6,
+		CautiousT: 265, RetreatPest: true, FinalHold: true, CoverReload: true, PracticeRim: 0.6,
 	}
 }
 

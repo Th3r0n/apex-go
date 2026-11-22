@@ -171,9 +171,12 @@ func (b *Bot) think(act *Action) {
 				if edge && provoked {
 					b.edgeOnT = b.t
 				}
+				coverFirst := b.P.CoverFirst && provoked && !edge && tgt.d >= b.P.CoverMinRange // from ahmad-ovh/Buildathon@56e0f76b (MIT)
 				switch {
 				case !provoked:
 					unprovoked = true
+				case coverFirst && !(onRoof && roofWanted) && b.slipFromX(tgt, ths, true):
+					slip = true
 				case onRoof && roofWanted && !b.enemyOnRoof(ths):
 					roofDuck = true
 				case far && heavy && b.slipFrom(tgt, ths):
@@ -187,7 +190,7 @@ func (b *Bot) think(act *Action) {
 					switch {
 					case tgt.adv >= b.P.AvoidAdv:
 						fightWhy = ".edge"
-					case tgt.d < b.P.AvoidRange:
+					case tgt.d < b.P.AvoidRange && !(b.P.CoverFirst && tgt.d >= b.P.CoverMinRange):
 						fightWhy = ".close"
 					default:
 						fightWhy = ".nocover"
@@ -458,6 +461,13 @@ func (b *Bot) think(act *Action) {
 
 	case b.retreating:
 		b.mode = "retreat"
+		if b.P.RetreatPest && nEngaged == 0 { // from ahmad-ovh/Buildathon@56e0f76b (MIT)
+			if tr := b.pest(); tr != nil && tr.LOS && dist2(b.pos, tr.Pos) < 120 {
+				at := b.targetOf(tr)
+				shootItem = &at
+				shootHP = tr.HP
+			}
+		}
 		deeper := st.avoid
 		deep := deeper && b.deepCell >= 0 && b.t-b.deepT < 8
 		if deep && (b.t-b.lastWeaponDT < 0.45 || !b.cellHidden(b.deepCell, ths)) {
@@ -604,8 +614,13 @@ func (b *Bot) think(act *Action) {
 			b.lootID = -1
 			b.mode = "hold"
 			if zi.final {
-				tol := 3.5
-				if d := setGoal(b.o.Zone.NextCenter[0], b.o.Zone.NextCenter[1], 1.8, false); d < tol {
+				tol := 2.0
+				boostFinal := false
+				if b.P.FinalHold { // from ahmad-ovh/Buildathon@56e0f76b (MIT)
+					tol = clamp(b.o.Zone.Radius*0.06, 0.35, 2.0)
+					boostFinal = b.o.Zone.Radius < 18 && b.energy > 15
+				}
+				if d := setGoal(b.o.Zone.NextCenter[0], b.o.Zone.NextCenter[1], 1.8, boostFinal); d < tol {
 					rq.wantW = 0
 					rq.hold = true
 				}
@@ -696,6 +711,20 @@ func (b *Bot) think(act *Action) {
 		}
 	}
 
+	if b.P.CoverReload && !act.Reload && shootItem == nil { // from ahmad-ovh/Buildathon@56e0f76b (MIT)
+		if gi := b.has("gun"); gi >= 0 && !act.Fire[gi] {
+			sl := &b.slots[gi]
+			mag := stat(sl.stats, "mag", 12)
+			frac := 0.60
+			if b.ffa {
+				frac = 0.25
+			}
+			if sl.reload <= 0 && sl.ammo <= mag*frac && sl.ammo < mag && b.t-b.lastEnemyLOST >= 1.1 {
+				act.Reload = true
+			}
+		}
+	}
+
 	// §8.10 debug label
 	b.modeLabel = st.name + ":" + b.mode
 	wl := ""
@@ -767,13 +796,16 @@ func (b *Bot) laserEdge(tr *Track) bool { return b.has("laser") >= 0 && !tr.Lase
 
 func (b *Bot) slipFromX(tgt *threat, ths []threat, anyEdge bool) bool {
 	minR, maxAdv := b.P.AvoidRange, b.P.AvoidAdv
+	if b.P.CoverFirst && b.P.CoverMinRange < minR {
+		minR = b.P.CoverMinRange
+	}
 	if b.t-b.slipOnT < 1.0 {
 		minR, maxAdv = minR*0.85, maxAdv*1.15
 	}
 	if anyEdge {
 		maxAdv = 1e9
 	}
-	if tgt.d < minR || tgt.adv >= maxAdv {
+	if b.P.AvoidAdv <= 0 || tgt.d < minR || tgt.adv >= maxAdv {
 		return false
 	}
 	if tgt.tr.LOS && tgt.tr.HP > 0 && tgt.tr.HP < b.myDPS(tgt.d)*1.5+60 {
