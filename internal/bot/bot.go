@@ -137,6 +137,17 @@ type Params struct {
 	FFAFrom, FFAUntil int64   // unix seconds: lobby treated as a free-for-all from tick 0 in this window
 	VultureW          float64 // FFA: priority bonus on a target someone else is hurting
 	FFADuelAt         int     // FFA: all-in duel stance from this many alive
+	SquadSeek         bool    // squad stance: keep roaming for targets past the cube quota
+	// practice-only knobs (house squad: 15 bots that never shoot each other); ignored in a free-for-all
+	PracRearW    float64 // 1: rear-arc avoidance weight in practice (overrides RearAvoidW)
+	PracFinishX  float64 // 2: target priority multiplier when we can finish it within PracFinishS
+	PracFinishS  float64
+	PracSeek     bool    // 4: healthy, no target: go after the nearest enemy seen in the last PracSeekS
+	PracSeekS    float64
+	PracDropSafe bool    // 6: supply drops only without danger and unhurt
+	PracNpcSafe  bool    // 7: drones only within 55 m, HP > 75%, no enemy within 110 m
+	PracLateR    float64 // 9: cautious (cover-first) stance once the next circle is <= this radius
+	PracAccLead  bool    // 10: lead the target's acceleration too (capped)
 }
 
 func DefaultParams() Params {
@@ -162,7 +173,8 @@ func DefaultParams() Params {
 		CautiousT: 265, RetreatPest: true, FinalHold: true, CoverReload: true, PracticeRim: 0.6,
 		SquadHuntRange: 220, SquadHuntRangeLaser: 250,
 		HealBelow: 0.8, HealUntil: 0.97,
-		FFAFrom: 1795363200, FFAUntil: 1795363200 + 5*86400, VultureW: 1.6, FFADuelAt: 3,
+		FFAFrom: 1795363200, FFAUntil: 1795363200 + 5*86400, VultureW: 1.6, FFADuelAt: 3, SquadSeek: false,
+		PracRearW: 50, PracFinishX: 1.5, PracFinishS: 3, PracSeek: true, PracSeekS: 30,
 	}
 }
 

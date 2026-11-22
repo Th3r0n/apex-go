@@ -70,6 +70,9 @@ func (b *Bot) think(act *Action) {
 				s *= 1.3
 			}
 		}
+		if !b.ffa && b.P.PracFinishX > 0 && th.tr.HP > 0 && th.tr.HP < b.myDPS(th.d)*b.P.PracFinishS {
+			s *= b.P.PracFinishX
+		}
 		if b.P.RearBonus > 0 && b.isRear(th.tr) {
 			s *= 1 + b.P.RearBonus
 		}
@@ -355,6 +358,9 @@ func (b *Bot) think(act *Action) {
 		}
 		if len(extras) > 0 {
 			w := b.P.RearAvoidW
+			if !b.ffa && b.P.PracRearW > 0 {
+				w = b.P.PracRearW
+			}
 			prev := rq.posCost
 			rq.posCost = func(x, y float64) float64 {
 				c := 0.0
@@ -656,6 +662,9 @@ func (b *Bot) think(act *Action) {
 					rq.wantW = 0
 					rq.hold = true
 				}
+			} else if sx, sy, ok := b.seekTarget(tgt, hpFrac); ok {
+				b.mode = "seek"
+				setGoal(sx, sy, 1.6, false)
 			} else if rx, ry, ok := b.roamTarget(st, hpFrac); ok && (!roofWanted || (!b.armed() && quiet)) {
 				b.mode = "roam"
 				setGoal(rx, ry, 1.5, false)
@@ -957,11 +966,35 @@ func (b *Bot) cubeRun(tgt *threat, st stance, hpFrac float64) *Item {
 	return best
 }
 
+// seekTarget (practice only): healthy and without a target, walk to where the nearest enemy mech was
+// last seen in the last PracSeekS seconds instead of waiting in a hide (kills are the points)
+func (b *Bot) seekTarget(tgt *threat, hpFrac float64) (float64, float64, bool) {
+	if b.ffa || !b.P.PracSeek || tgt != nil || hpFrac <= 0.7 {
+		return 0, 0, false
+	}
+	var best *Track
+	bd := 1e18
+	for _, tr := range b.tracks {
+		if tr.NPC || b.t-tr.LastSeen > b.P.PracSeekS {
+			continue
+		}
+		if d := dist2(b.pos, tr.Pos); d < bd {
+			best, bd = tr, d
+		}
+	}
+	if best == nil || bd < 4 {
+		return 0, 0, false
+	}
+	return best.Pos[0], best.Pos[1], true
+}
+
 func (b *Bot) roamTarget(st stance, hpFrac float64) (float64, float64, bool) {
 	if hpFrac < 0.7 {
 		return 0, 0, false
 	}
-	if b.o.Self.Cubes >= st.wantCubes {
+	// squad seek: the house bots never fight each other, so our kills are the points; keep patrolling
+	// unseen ground for the next one instead of waiting in a hide once the cube quota is met
+	if b.o.Self.Cubes >= st.wantCubes && !(st.name == "squad" && b.P.SquadSeek) {
 		return 0, 0, false
 	}
 	return b.roamGoal()
