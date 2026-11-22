@@ -64,6 +64,12 @@ func (b *Bot) think(act *Action) {
 		if th.tr.ID == b.targetID {
 			s *= 1.2
 		}
+		if b.ffa && b.P.VultureW > 0 && b.t-th.tr.OtherHurtT < 3 {
+			s *= b.P.VultureW
+			if th.tr.MaxHP > 0 && th.tr.HP/th.tr.MaxHP < 0.45 {
+				s *= 1.3
+			}
+		}
 		if b.P.RearBonus > 0 && b.isRear(th.tr) {
 			s *= 1 + b.P.RearBonus
 		}
@@ -218,6 +224,23 @@ func (b *Bot) think(act *Action) {
 		case st.name == "duel" && hpFrac > 0.5:
 			wantFight = true
 		}
+	}
+	// FFA vulture: finish a mech someone else is wearing down when it is nearly dead
+	if b.ffa && tgt != nil && !b.retreating && b.P.VultureW > 0 && b.t-tgt.tr.OtherHurtT < 3 && tgt.tr.LOS && tgt.tr.Listed &&
+		tgt.d < 140 && hpFrac > 0.5 && tgt.tr.HP > 0 && tgt.tr.HP < b.myDPS(tgt.d)*3.5 {
+		wantFight, slip, plink, unprovoked, roofDuck = true, false, false, false, false
+		fightWhy = ".vulture"
+	}
+	// heal first: hurt and nobody around -> let the 5 s regen timer run (no crates, no drones)
+	if b.P.HealBelow > 0 {
+		alone := !danger
+		for i := range ths {
+			if b.t-ths[i].tr.LastSeen < 6 {
+				alone = false
+				break
+			}
+		}
+		b.healing = alone && hpFrac < b.P.HealUntil && (b.healing || hpFrac < b.P.HealBelow)
 	}
 	if plink && b.chooseLoot(true, st) == nil {
 		plink = false

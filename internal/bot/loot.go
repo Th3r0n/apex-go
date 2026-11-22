@@ -141,11 +141,11 @@ func (b *Bot) chooseLoot(danger bool, st stance) *loot {
 			}
 		}
 		for _, it := range b.crates {
-			if it.Ground {
+			if it.Ground && !b.healing {
 				consider(loot{kind: "crate", id: it.ID, pos: it.Pos, shoot: true}, 7*1.0, 2.5)
 			}
 		}
-		if !danger {
+		if !danger && !b.healing {
 			for _, tr := range b.tracks {
 				if tr.NPC && b.t-tr.LastSeen < 20 {
 					k := b.Nav.Index(tr.Pos[0], tr.Pos[1])

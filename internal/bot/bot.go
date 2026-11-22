@@ -4,6 +4,9 @@ package bot
 import (
 	"math"
 	"math/rand"
+	"os"
+	"strconv"
+	"time"
 
 	"apexbot/internal/proto"
 	"apexbot/internal/world"
@@ -128,6 +131,12 @@ type Params struct {
 	// hunt farther in the squad stance (their best official score, 6.29)
 	SquadHuntRange      float64
 	SquadHuntRangeLaser float64
+	// heal first: regen (45 HP/s) needs 5 s without dealing or taking damage, so no farming while hurt
+	HealBelow, HealUntil float64
+	// free-for-all pack (qualifying and final are 16-mech free-for-alls, after the practice cutoff)
+	FFAFrom, FFAUntil int64   // unix seconds: lobby treated as a free-for-all from tick 0 in this window
+	VultureW          float64 // FFA: priority bonus on a target someone else is hurting
+	FFADuelAt         int     // FFA: all-in duel stance from this many alive
 }
 
 func DefaultParams() Params {
@@ -152,6 +161,8 @@ func DefaultParams() Params {
 		OpenSecs: 24, CreditOpenS: 25, CoverMinRange: 40, NoMortar: true, LaserValue: 6.0, LightningValue: 2.6,
 		CautiousT: 265, RetreatPest: true, FinalHold: true, CoverReload: true, PracticeRim: 0.6,
 		SquadHuntRange: 180, SquadHuntRangeLaser: 200,
+		HealBelow: 0.8, HealUntil: 0.97,
+		FFAFrom: 1795363200, FFAUntil: 1795363200 + 5*86400, VultureW: 1.6, FFADuelAt: 3,
 	}
 }
 
@@ -179,6 +190,8 @@ type Track struct {
 	ViewT                             float64
 	EngT                              float64
 	LaserFiredT                       float64
+	DropT                             float64 // last time its HP went down
+	OtherHurtT                        float64 // last time its HP went down without a hit of ours
 
 	hist                      [trkHist]trkSample
 	hn, hi                    int
@@ -304,6 +317,8 @@ type Bot struct {
 	slipT, slipOnT              float64
 	creditT                     float64
 	creditID                    int
+	healing                     bool
+	now                         int64
 }
 
 func New(h *Hello, w *World, nav *Nav, p Params) *Bot {
@@ -350,6 +365,14 @@ func New(h *Hello, w *World, nav *Nav, p Params) *Bot {
 	b.slipT, b.slipOnT = -100, -100
 	b.creditT = -100
 
+	if v := os.Getenv("MECH_NOW"); v != "" { // local tests only: pretend the wall clock is this unix time
+		if n, err := strconv.ParseInt(v, 10, 64); err == nil {
+			b.now = n
+		}
+	}
+	if b.now == 0 {
+		b.now = time.Now().Unix()
+	}
 	nav.Exposure()
 	nav.Components()
 	nav.Roofs()
@@ -444,6 +467,9 @@ func (b *Bot) observe(o *Obs) {
 		}
 		tr.Pos, tr.Vel, tr.Aim = m.Pos, m.Vel, m.Aim
 		if m.MaxHP > 0 {
+			if tr.MaxHP > 0 && m.HP < tr.HP-1 {
+				tr.DropT = b.t
+			}
 			tr.HP, tr.MaxHP = m.HP, m.MaxHP
 		} else if tr.MaxHP == 0 {
 			tr.HP, tr.MaxHP = 1400, 1400
@@ -590,6 +616,12 @@ func (b *Bot) observe(o *Obs) {
 			if e.Reason == "gone" || e.Reason == "have" {
 				delete(b.pickups, e.ID.Num)
 			}
+		}
+	}
+	// hurt by someone else this tick (FFA vulture): HP went down and no hit of ours landed on it
+	for _, tr := range b.tracks {
+		if tr.DropT == b.t && tr.IHurtT != b.t {
+			tr.OtherHurtT = b.t
 		}
 	}
 	b.foldItems(o.Crates, b.crates, "crate")

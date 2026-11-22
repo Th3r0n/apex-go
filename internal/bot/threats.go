@@ -98,9 +98,12 @@ func (b *Bot) belief() stance {
 			b.ffa = true
 		}
 	}
+	if b.P.FFAFrom > 0 && b.now >= b.P.FFAFrom && b.now < b.P.FFAUntil {
+		b.ffa = true // after the practice cutoff every match is a free-for-all between team bots
+	}
 	alive := b.o.Alive
 	switch {
-	case alive <= 2:
+	case alive <= 2 || (b.ffa && alive <= b.P.FFADuelAt):
 		return stance{name: "duel", engageRatio: 0.0, disengage: 0.45, hunt: true, lootRadius: 150, wantCubes: 40}
 	case b.ffa:
 		return b.brawlStance("ffa")
