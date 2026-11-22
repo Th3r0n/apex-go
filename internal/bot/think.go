@@ -46,9 +46,29 @@ func (b *Bot) think(act *Action) {
 		if !th.tr.Listed {
 			continue
 		}
+		// from ahmad-ovh/Buildathon@56e0f76b (MIT): focus the weakest engaged target
 		s := 1 / (1 + th.d/60)
 		if th.tr.LOS {
-			s *= 1.5
+			s *= 3
+		}
+		if th.engaged {
+			s *= 1.6
+		}
+		if th.tr.MaxHP > 0 {
+			kf := 1.0
+			if b.P.KillFocus > 0 {
+				kf = b.P.KillFocus
+			}
+			s *= 1 + kf*(1-th.tr.HP/th.tr.MaxHP)
+		}
+		if th.tr.ID == b.targetID {
+			s *= 1.2
+		}
+		if b.P.RearBonus > 0 && b.isRear(th.tr) {
+			s *= 1 + b.P.RearBonus
+		}
+		if b.P.CookoffBonus > 0 && b.has("laser") >= 0 && th.tr.Mortar && stat(b.C.Weapons["laser"], "cookoff", 0) > 0 {
+			s *= 1 + b.P.CookoffBonus
 		}
 		if s > bestS {
 			bestS, tgt = s, th

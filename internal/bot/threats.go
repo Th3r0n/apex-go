@@ -308,8 +308,9 @@ func (b *Bot) fightPlan(tr *Track, d float64) (adv, rmin, rmax float64) {
 	if hp <= 0 {
 		hp = math.Max(tr.MaxHP, 1)
 	}
-	cands := [...]float64{24, 38}
-	bestAdv := -1.0
+	// from ahmad-ovh/Buildathon@56e0f76b (MIT): wider range ladder and a band around the best range
+	cands := [...]float64{22, 45, 75, 115, 160, 200}
+	bestAdv, bestR := -1.0, d
 	eval := func(r float64, here bool) {
 		mine := b.myDPS(r)
 		theirs := b.theirDPS(tr, r) * (1 - b.armor) * b.dodgeFactor(r, tr)
@@ -321,7 +322,7 @@ func (b *Bot) fightPlan(tr *Track, d float64) (adv, rmin, rmax float64) {
 		if !here && move > 8 {
 			mid := (d + r) / 2
 			cost = b.theirDPS(tr, mid) * (1 - b.armor) * b.dodgeFactor(mid, tr) * (move / 9.0) * 0.8
-			if b.realModel() {
+			if b.P.PlanV2 && b.realModel() {
 				gain = b.myDPS(mid) * (move / 9.0) * 0.8
 			}
 			if r > d && !tr.NPC {
@@ -344,7 +345,7 @@ func (b *Bot) fightPlan(tr *Track, d float64) (adv, rmin, rmax float64) {
 			a *= 1.05
 		}
 		if a > bestAdv {
-			bestAdv = a
+			bestAdv, bestR = a, r
 		}
 	}
 	eval(d, true)
@@ -354,7 +355,8 @@ func (b *Bot) fightPlan(tr *Track, d float64) (adv, rmin, rmax float64) {
 	if bestAdv < 0 {
 		return 0, 30, 55
 	}
-	return bestAdv, 18, 42
+	w := 10 + bestR*0.15
+	return bestAdv, math.Max(8, bestR-w), bestR + w
 }
 
 func (b *Bot) dodgeFactor(r float64, tr *Track) float64 {

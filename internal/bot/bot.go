@@ -105,6 +105,12 @@ type Params struct {
 	LaserMechOnly   bool
 	LaserCDTrack    bool
 	DropRun         float64
+	// restored from ahmad-ovh/Buildathon@56e0f76b (MIT)
+	LeadCumMin    float64
+	LaserEarlyRel bool
+	RearBonus     float64
+	CookoffBonus  float64
+	KillFocus     float64
 }
 
 func DefaultParams() Params {
@@ -124,6 +130,7 @@ func DefaultParams() Params {
 		HuntRange: 130, HuntRangeLaser: 130, KiteMin: 130, KiteMax: 190, CookoffAware: false, AntiLightningW: 180,
 		LaserDodgeV2: false, SmartFireV2: true, BeamFFA: true, UpV2: false, LaserMechOnly: false,
 		LaserCDTrack: true, DropRun: 0,
+		LeadCumMin: 8, LaserEarlyRel: true, RearBonus: 0.25, CookoffBonus: 0.30,
 	}
 }
 
@@ -151,6 +158,17 @@ type Track struct {
 	ViewT                             float64
 	EngT                              float64
 	LaserFiredT                       float64
+
+	hist                      [trkHist]trkSample
+	hn, hi                    int
+	leadN, missNone, missLead float64
+}
+
+const trkHist = 40
+
+type trkSample struct {
+	t, x, y, vx, vy float64
+	facing          bool
 }
 
 func (t *Track) scale(sizePerCube float64) float64 { return 1 + sizePerCube*float64(t.Cubes) }
@@ -456,7 +474,9 @@ func (b *Bot) observe(o *Obs) {
 			if off < tol {
 				tr.AimAtMeT = b.t
 			}
-			// leadRecord omitted: no observable effect (§9.7)
+			if b.P.LeadPersist || b.P.LeadCum {
+				b.leadRecord(tr, off < 0.35)
+			}
 		}
 	}
 	mem := b.C.Vision.MemoryS
