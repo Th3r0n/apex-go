@@ -162,7 +162,7 @@ func DefaultParams() Params {
 		CautiousT: 265, RetreatPest: true, FinalHold: true, CoverReload: true, PracticeRim: 0.6,
 		SquadHuntRange: 220, SquadHuntRangeLaser: 250,
 		HealBelow: 0.8, HealUntil: 0.97,
-		FFAFrom: 1795363200, FFAUntil: 1795363200 + 5*86400, VultureW: 1.6, FFADuelAt: 3,
+		FFAFrom: 1795363200, FFAUntil: 1795363200 + 5*86400, VultureW: 1.6, FFADuelAt: 2,
 	}
 }
 

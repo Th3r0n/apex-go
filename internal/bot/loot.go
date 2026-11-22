@@ -288,7 +288,7 @@ func (b *Bot) chooseHide(zi zoneInfo) int {
 			if z.NextRadius > 60 && dn < z.NextRadius*0.35 { // from ahmad-ovh/Buildathon@56e0f76b (MIT)
 				s += 10
 			}
-			if !b.ffa && b.P.PracticeRim > 0 && z.NextRadius >= 180 {
+			if b.P.PracticeRim > 0 && z.NextRadius >= 180 { // rim hide in FFA too: off the circle centre
 				wantR := z.NextRadius * 0.88
 				s += math.Abs(dn-wantR) * b.P.PracticeRim
 			}
