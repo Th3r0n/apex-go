@@ -151,6 +151,15 @@ func (b *Bot) think(act *Action) {
 	onRoof := b.onRoof() >= 0 && b.o.Self.Grounded
 	roofWanted := b.roofWanted(st, zi)
 	huntR := b.P.HuntRange
+	if b.has("laser") >= 0 && b.P.HuntRangeLaser > huntR {
+		huntR = b.P.HuntRangeLaser
+	}
+	if st.name == "squad" && b.P.SquadHuntRange > 0 {
+		huntR = b.P.SquadHuntRange
+		if b.has("laser") >= 0 && b.P.SquadHuntRangeLaser > huntR {
+			huntR = b.P.SquadHuntRangeLaser
+		}
+	}
 	if tgt != nil && !b.retreating {
 		switch {
 		case tgt.engaged:

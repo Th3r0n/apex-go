@@ -124,11 +124,15 @@ type Params struct {
 	FinalHold        bool
 	CoverReload      bool
 	PracticeRim      float64
+	// sq-hunt squad set, from TigerTown27 (andrew-zhouu/builders-mech-royale-2026, MIT) variants.go:
+	// hunt farther in the squad stance (their best official score, 6.29)
+	SquadHuntRange      float64
+	SquadHuntRangeLaser float64
 }
 
 func DefaultParams() Params {
 	return Params{
-		Name: "apex-go", EngageRatio: 1.25, DisengageRat: 0.75, RetreatHP: 0.45, ReturnHP: 0.85, LeadDamp: 0.65,
+		Name: "apex-go", EngageRatio: 0.9, DisengageRat: 0.75, RetreatHP: 0.45, ReturnHP: 0.85, LeadDamp: 0.65,
 		GunMaxRange: 224, StrafeMin: 0.35, StrafeMax: 1.1, LootRadius: 220, WantCubes: 15, DropGreed: 0.5,
 		Hunt: true, PracticeAware: true, FFAReturnFire: 230, Salt: 8, DuelDisengage: 0.5, UseRoofs: true,
 		RoofInSquad: false, RoofMaxClimb: 40, RoofMinHeight: 12, RoofMinZone: 60, DropRadius: 300, LeaveTTD: 10,
@@ -147,6 +151,7 @@ func DefaultParams() Params {
 		AntiLightningPad: 12, RearAvoidW: 35,
 		OpenSecs: 24, CreditOpenS: 25, CoverMinRange: 40, NoMortar: true, LaserValue: 6.0, LightningValue: 2.6,
 		CautiousT: 265, RetreatPest: true, FinalHold: true, CoverReload: true, PracticeRim: 0.6,
+		SquadHuntRange: 180, SquadHuntRangeLaser: 200,
 	}
 }
 
