@@ -175,6 +175,7 @@ func DefaultParams() Params {
 		HealBelow: 0.8, HealUntil: 0.97,
 		FFAFrom: 1795363200, FFAUntil: 1795363200 + 5*86400, VultureW: 1.6, FFADuelAt: 3, SquadSeek: false,
 		PracRearW: 50, PracFinishX: 1.5, PracFinishS: 3, PracSeek: true, PracSeekS: 30,
+		PracDropSafe: true, PracNpcSafe: true,
 	}
 }
 
