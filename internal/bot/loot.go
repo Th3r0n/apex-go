@@ -149,6 +149,9 @@ func (b *Bot) chooseLoot(danger bool, st stance) *loot {
 			for _, tr := range b.tracks {
 				if tr.NPC && b.t-tr.LastSeen < 20 {
 					k := b.Nav.Index(tr.Pos[0], tr.Pos[1])
+					if !b.ffa && (dist2(b.pos, tr.Pos) > 55 || b.hp < b.maxHP*0.75 || b.enemyNear(b.pos, 110)) {
+						continue // practice: drones only close, healthy and with nobody around
+					}
 					if !b.Nav.Solid[k] && math.Abs(float64(b.Nav.Z[k])-tr.Pos[2]) < 4 {
 						consider(loot{kind: "npc", id: tr.ID, pos: tr.Pos, shoot: true}, 11*1.0, 5)
 					}
@@ -160,6 +163,9 @@ func (b *Bot) chooseLoot(danger bool, st stance) *loot {
 		dr := &b.o.Drops[i]
 		d := dist2(b.pos, dr.Pos)
 		if d > 300 {
+			continue
+		}
+		if !b.ffa && (danger || b.hp < b.maxHP*0.8) { // practice: drops only when safe and unhurt
 			continue
 		}
 		if dr.LandsIn > d/b.walk*1.3+6 && !(dr.ID == b.lootID) {
